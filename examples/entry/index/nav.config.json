@@ -1,0 +1,83 @@
+{
+  "开发指南": [
+    {
+      "path": "/",
+      "redirect": "/installation"
+    },
+    {
+      "desc": "安装",
+      "path": "/installation",
+      "name": "installation"
+    },
+    {
+      "desc": "快速上手",
+      "path": "/quickstart",
+      "name": "quickstart"
+    },
+    {
+      "desc": "自定义主题",
+      "path": "/custom-theme",
+      "name": "custom-theme"
+    }
+  ],
+  "组件": [
+    {
+      "desc": "基础组件",
+      "path": "/",
+      "items": [
+        {
+          "desc": "Layout 布局",
+          "path": "/layout",
+          "name": "layout"
+        },
+        {
+          "desc": "Color 色彩",
+          "path": "/color",
+          "name": "color"
+        },
+        {
+          "desc": "Typography 字体",
+          "path": "/typography",
+          "name": "typography"
+        },
+        {
+          "desc": "Icon 图标",
+          "path": "/icon",
+          "name": "icon"
+        },
+        {
+          "desc": "Button 按钮",
+          "path": "/button",
+          "name": "button"
+        }    
+      ]
+    },
+    {
+      "desc": "Data",
+      "path": "/",
+      "items": [
+        {
+          "desc": "Tag 标签",
+          "path": "/tag",
+          "name": "tag"
+        },
+        {
+          "desc": "Progress 进度条",
+          "path": "/progress",
+          "name": "progress"
+        }
+      ]
+    },
+    {
+      "desc": "Others",
+      "path": "/",
+      "items": [
+        {
+          "desc": "Card 卡片",
+          "path": "/card",
+          "name": "card"
+        }
+      ]
+    }
+  ]
+}

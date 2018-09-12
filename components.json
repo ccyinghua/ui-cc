@@ -1,0 +1,9 @@
+{
+  "button": "./packages/button/index.js",
+  "button-group": "./packages/button-group/index.js",
+  "card": "./packages/card/index.js",
+  "tag": "./packages/tag/index.js",
+  "row": "./packages/row/index.js",
+  "col": "./packages/col/index.js",
+  "progress": "./packages/progress/index.js"
+}
