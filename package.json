@@ -1,13 +1,19 @@
 {
   "name": "ui-cc",
-  "version": "1.0.0",
-  "description": "view for ui-cc",
+  "version": "1.0.1",
+  "description": "ui-cc as element-ui",
   "author": "ccyinghua",
-  "private": true,
+  "private": false,
   "main": "lib/index.js",
   "style": "lib/theme-chalk/index.css",
   "files": [
     "lib"
+  ],
+  "keywords": [
+    "vue",
+    "ui",
+    "element",
+    "element-ui"
   ],
   "scripts": {
     "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
