@@ -30,7 +30,8 @@ npm run build
   - [8.1 下载依赖](#81-下载依赖)
   - [8.2 配置](#82-配置)
   - [8.3 md格式组件使用](#83-md格式组件使用)
-- [**9-项目目录**](#9-项目目录)
+- [**9-npm发布**](#9-npm发布)
+- [**10-项目目录**](#10-项目目录)
 
 ## <a id="1-初步构建"></a>1-初步构建
 
@@ -819,7 +820,17 @@ cnpm install node-sass sass-loader --save-dev
 ![](readmeimg/1.png)
 
 
-## <a id="9-项目目录">9-项目目录
+
+
+## <a id="9-npm发布">9-npm发布
+
+```
+npm login // 登录npm账户
+npm publish // 发布
+```
+[https://www.npmjs.com/package/ui-cc](https://www.npmjs.com/package/ui-cc)
+
+## <a id="10-项目目录">10-项目目录
 
 ```
 ├── Readme.md                       帮助文档
