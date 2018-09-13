@@ -32,7 +32,7 @@ export default {
   ButtonGroup,  
   Tag,  
   Row,
-  Col, 
+  Col,
   Progress,
   Card
 };

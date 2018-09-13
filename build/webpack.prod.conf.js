@@ -6,23 +6,14 @@ const config = require('../config')
 const merge = require('webpack-merge')
 const baseWebpackConfig = require('./webpack.base.conf')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
-// -- 删除HtmlWebpackPlugin相关配置，这里只需要打包js文件和css文件，不涉及html
-// const HtmlWebpackPlugin = require('html-webpack-plugin')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
 const ExtractTextPlugin = require('extract-text-webpack-plugin')
 const OptimizeCSSPlugin = require('optimize-css-assets-webpack-plugin')
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
 
 const env = require('../config/prod.env')
 
-// ++ 整理入口
-const components = require('../components.json')
-const entrys = {}
-Object.keys(components).forEach(item => {
-  entrys[item] = components[item]
-})
-
 const webpackConfig = merge(baseWebpackConfig, {
-  entry: entrys,
   module: {
     rules: utils.styleLoaders({
       sourceMap: config.build.productionSourceMap,
@@ -33,13 +24,8 @@ const webpackConfig = merge(baseWebpackConfig, {
   devtool: config.build.productionSourceMap ? config.build.devtool : false,
   output: {
     path: config.build.assetsRoot,
-    // -- 出口.js文件的名称不能写死
-    // filename: utils.assetsPath('js/[name].[chunkhash].js'),
-    // chunkFilename: utils.assetsPath('js/[id].[chunkhash].js')
-    // ++
-    filename: '[name].js',
-    library: 'ui-cc',
-    libraryTarget: 'umd'
+    filename: utils.assetsPath('js/[name].[chunkhash].js'),
+    chunkFilename: utils.assetsPath('js/[id].[chunkhash].js')
   },
   plugins: [
     // http://vuejs.github.io/vue-loader/en/workflow/production.html
@@ -57,13 +43,12 @@ const webpackConfig = merge(baseWebpackConfig, {
     }),
     // extract css into its own file
     new ExtractTextPlugin({
-      // filename: utils.assetsPath('css/[name].[contenthash].css'),
-      filename: '/theme-chalk/[name].css'
+      filename: utils.assetsPath('css/[name].[contenthash].css'),
       // Setting the following option to `false` will not extract CSS from codesplit chunks.
       // Their CSS will instead be inserted dynamically with style-loader when the codesplit chunk has been loaded by webpack.
       // It's currently set to `true` because we are seeing that sourcemaps are included in the codesplit bundle as well when it's `false`,
       // increasing file size: https://github.com/vuejs-templates/webpack/issues/1110
-      // allChunks: true,
+      allChunks: true,
     }),
     // Compress extracted CSS. We are using this plugin so that possible
     // duplicated CSS from different components can be deduped.
@@ -94,34 +79,34 @@ const webpackConfig = merge(baseWebpackConfig, {
     // enable scope hoisting
     new webpack.optimize.ModuleConcatenationPlugin(),
     // split vendor js into its own file
-    // new webpack.optimize.CommonsChunkPlugin({
-    //   name: 'vendor',
-    //   minChunks (module) {
-    //     // any required modules inside node_modules are extracted to vendor
-    //     return (
-    //       module.resource &&
-    //       /\.js$/.test(module.resource) &&
-    //       module.resource.indexOf(
-    //         path.join(__dirname, '../node_modules')
-    //       ) === 0
-    //     )
-    //   }
-    // }),
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'vendor',
+      minChunks (module) {
+        // any required modules inside node_modules are extracted to vendor
+        return (
+          module.resource &&
+          /\.js$/.test(module.resource) &&
+          module.resource.indexOf(
+            path.join(__dirname, '../node_modules')
+          ) === 0
+        )
+      }
+    }),
     // extract webpack runtime and module manifest to its own file in order to
     // prevent vendor hash from being updated whenever app bundle is updated
-    // new webpack.optimize.CommonsChunkPlugin({
-    //   name: 'manifest',
-    //   minChunks: Infinity
-    // }),
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'manifest',
+      minChunks: Infinity
+    }),
     // This instance extracts shared chunks from code splitted chunks and bundles them
     // in a separate chunk, similar to the vendor chunk
     // see: https://webpack.js.org/plugins/commons-chunk-plugin/#extra-async-commons-chunk
-    // new webpack.optimize.CommonsChunkPlugin({
-    //   name: 'app',
-    //   async: 'vendor-async',
-    //   children: true,
-    //   minChunks: 3
-    // }),
+    new webpack.optimize.CommonsChunkPlugin({
+      name: 'app',
+      async: 'vendor-async',
+      children: true,
+      minChunks: 3
+    }),
 
     // copy custom static assets
     new CopyWebpackPlugin([
@@ -158,3 +143,31 @@ if (config.build.bundleAnalyzerReport) {
 }
 
 module.exports = webpackConfig
+
+var pages = utils.getEntries('./examples/entry/*/*.html')
+for(var page in pages) {
+  // 配置生成的html文件，定义路径等
+  var conf = {
+    filename: page + '.html',
+    template: pages[page], //模板路径
+    inject: true,
+    // excludeChunks 允许跳过某些chunks, 而chunks告诉插件要引用entry里面的哪几个入口
+    // 如何更好的理解这块呢？举个例子：比如本demo中包含两个模块（index和about），最好的当然是各个模块引入自己所需的js，
+    // 而不是每个页面都引入所有的js，你可以把下面这个excludeChunks去掉，然后npm run build，然后看编译出来的index.html和about.html就知道了
+    // filter：将数据过滤，然后返回符合要求的数据，Object.keys是获取JSON对象中的每个key
+    excludeChunks: Object.keys(pages).filter(item => {
+      return (item != page)
+    }),
+    minify: {
+      removeComments: true,
+      collapseWhitespace: true,
+      removeAttributeQuotes: true
+      // more options:
+      // https://github.com/kangax/html-minifier#options-quick-reference
+    },
+    // necessary to consistently work with multiple chunks via CommonsChunkPlugin
+    chunksSortMode: 'dependency'
+  }
+  // 需要生成几个html文件，就配置几个HtmlWebpackPlugin对象
+  module.exports.plugins.push(new HtmlWebpackPlugin(conf))
+}

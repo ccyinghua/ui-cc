@@ -1,141 +1,433 @@
 # ui-cc
 
-> 制作自己的UI框架
+> 仿造elementUI，制作自己的UI框架(全部引入与按需加载)
 
 ## Build Setup
 
 ``` bash
-# install dependencies
+# 下载依赖
 npm install
 
-# serve with hot reload at localhost:8080
+# 运行测试项目
 npm run dev
 
-npm run build:theme
+# 打包插件，生成lib文件夹
+npm run build:theme  // 打包字体文件与样式
+npm run build:lib    // 打包所有组件生成index.js，与对应的单个组件
 
+# 打包测试项目静态资源文件，生成dist文件夹
 npm run build
 ```
-
-[**1-初步构建**](#1-初步构建)<br>
-[**2-修改配置**](#2-修改配置)<br>
-[**3-测试**](#3-测试)<br>
-[**4-打包css和fonts**](#4-打包css和fonts)<br>
-[**5-按需加载**](#5-按需加载)<br>
-[**6-UI框架Markdown格式组件说明文档**](#6-UI框架Markdown格式组件说明文档s)<br>
-- [6.1 下载依赖](#61-下载依赖)
-- [6.2 配置](#62-配置)
-- [6.3 md格式组件使用](#63-md格式组件使用)
+## 目录
+- [**1-初步构建**](#1-初步构建)
+- [**2-修改配置**](#2-修改配置)
+- [**3-编写组件**](#3-编写组件)
+- [**4-打包组件，package.json修改**](#4-打包组件，package.json修改)
+- [**5-打包css和fonts**](#5-打包css和fonts)
+- [**6-测试**](#6-测试)
+- [**7-按需加载**](#7-按需加载)
+- [**8-UI框架Markdown格式组件说明文档**](#8-UI框架Markdown格式组件说明文档)
+  - [8.1 下载依赖](#81-下载依赖)
+  - [8.2 配置](#82-配置)
+  - [8.3 md格式组件使用](#83-md格式组件使用)
+- [**9-项目目录**](#9-项目目录)
 
 ## <a id="1-初步构建"></a>1-初步构建
 
 建立一个vue-cli多页面项目： [https://github.com/ccyinghua/webpack-multipage](https://github.com/ccyinghua/webpack-multipage)
 
-将src文件夹重命名为examples，作为调试、UI框架说明文档例子；
-将build中的webpack相关配置文件中关于src的路径改为examples
+- 将src文件夹重命名为examples，作为调试、UI框架说明文档例子
+- 将build目录下的webpack相关配置文件中关于src的路径改为examples,修改部分如下：
+```javascript
+// webpack.base.conf.js
+module.exports = {
+  entry: utils.getEntries('./examples/entry/*/*.js'),
+  resolve: {
+    alias: {
+      'vue$': 'vue/dist/vue.esm.js',
+      '@': resolve('examples'),
+    }
+  },
+}
+// webpack.dev.conf.js
+var pages = utils.getEntries('./examples/entry/*/*.html')
 
-新建packages文件夹放置各个功能模块
-lib文件夹是最终打包生成目录
-增加components.json文件
+// webpack.prod.conf.js
+var pages = utils.getEntries('./examples/entry/*/*.html')
+```
+
+- 新建packages文件夹放置各个功能模块
+- lib文件夹是最终打包UI框架的生成目录
+- dist文件夹是打包测试项目的静态资源文件
+- 增加components.json文件
 
 ## <a id="2-修改配置"></a>2-修改配置
 
-config/index.js
+在build目录下新增`webpack.component.conf.js`和`webpack.componentAll.conf.js`配置文件。<br>
+- build/webpack.componentAll.conf.js,入口设置为packages/index.js这个文件中引入了所有的功能模块
 ```javascript
-build: {
-  assetsRoot: path.resolve(__dirname, '../lib') // 打包生成目录
+'use strict'
+const path = require('path')
+const webpack = require('webpack')
+const config = require('../config')
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
+
+function resolve (dir) {
+  return path.join(__dirname, '..', dir)
+}
+
+module.exports = {
+  entry: {
+    'index': './packages/index.js'
+  },
+  output: {
+    path: path.resolve(process.cwd(), './lib'),
+    publicPath: '/dist/',
+    filename: '[name].js',
+    library: 'element',
+    libraryTarget: 'umd',
+    umdNamedDefine: true
+  },
+  resolve: {
+    extensions: ['.js', '.vue', '.json'],
+    alias: {
+      'vue$': 'vue/dist/vue.esm.js',
+      '@': resolve('examples')
+    }
+  },
+  externals: {
+    vue: {
+      root: 'Vue',
+      commonjs: 'vue',
+      commonjs2: 'vue',
+      amd: 'vue'
+    }
+  },
+  module: {
+    rules: [
+      {
+        test: /\.(jsx?|babel|es6)$/,
+        include: process.cwd(),
+        exclude: /node_modules|utils\/popper\.js|utils\/date.\js/,
+        loader: 'babel-loader'
+      },
+      {
+        test: /\.vue$/,
+        loader: 'vue-loader',
+        options: {
+          preserveWhitespace: false
+        }
+      },
+      {
+        test: /\.css$/,
+        loaders: ['style-loader', 'css-loader', 'postcss-loader']
+      },
+      {
+        test: /\.scss$/,
+        loaders: ['style-loader', 'css-loader', 'sass-loader']
+      },
+      {
+        test: /\.html$/,
+        loader: 'html-loader?minimize=false'
+      },
+      {
+        test: /\.otf|ttf|woff2?|eot(\?\S*)?$/,
+        loader: 'url-loader',
+        query: {
+          limit: 10000,
+          name: path.posix.join('static', '[name].[hash:7].[ext]')
+        }
+      },
+      {
+        test: /\.svg(\?\S*)?$/,
+        loader: 'url-loader',
+        query: {
+          limit: 10000,
+          name: path.posix.join('static', '[name].[hash:7].[ext]')
+        }
+      },
+      {
+        test: /\.(gif|png|jpe?g)(\?\S*)?$/,
+        loader: 'url-loader',
+        query: {
+          limit: 10000,
+          name: path.posix.join('static', '[name].[hash:7].[ext]')
+        }
+      }
+    ]
+  },
+  plugins: [
+    new webpack.DefinePlugin({
+      'process.env.NODE_ENV': JSON.stringify('production')
+    }),
+    new UglifyJsPlugin({
+      uglifyOptions: {
+        compress: {
+          warnings: false
+        }
+      },
+      sourceMap: config.build.productionSourceMap,
+      parallel: true
+    }),
+    new webpack.LoaderOptionsPlugin({
+      minimize: true
+    })
+  ]
 }
 ```
-打包配置：
-由于`webpack.dev.conf.js`和`webpack.prod.conf.js`两个配置都是使用`webpack.base.conf.js`文件的配置作为基础配置，现在需将开发与生产环境分开，复制`webpack.base.conf.js`文件重命名为`webpack.examples.conf.js`，此文件作为测试项目examples文件夹运行的配置基础文件。
+- build/webpack.component.conf.js,入口components.json遍历而来。
 ```javascript
-// webpack.dev.conf.js修改
-const baseWebpackConfig = require('./webpack.examples.conf')
-```
-webpack.base.conf.js入口配置，设置为packages/index.js这个文件中引入了所有的功能模块
-```javascript
-// webpack.base.conf.js
-entry: {
-  'index': './packages/index.js'
-},
-output: {
-  path: path.resolve(process.cwd(), './lib'),
-  publicPath: '/dist/',
-  filename: 'ui-cc.common.js',
-  chunkFilename: '[id].js',
-  libraryTarget: 'commonjs2'
-},
-```
-build/webpack.prod.conf.js
-- 去除HtmlWebpackPlugin插件相关代码，因为只需要打包js文件和css文件，不涉及html；
-- 去除`new webpack.optimize.CommonsChunkPlugin`相关代码，CommonsChunkPlugin是抽取公用模块，打包会多生成vendor.js和manifest.js；
-- 之后配置文件再进行以下部分修改
-```javascript
-const baseWebpackConfig = require('./webpack.base.conf')
-// ++ 整理入口，入口除了所有模块，另外分别引入各个模块
+'use strict'
+const path = require('path')
+const webpack = require('webpack')
+const config = require('../config')
+
+function resolve (dir) {
+  return path.join(__dirname, '..', dir)
+}
+
+// 整理入口
 const components = require('../components.json')
 const entrys = {}
 Object.keys(components).forEach(item => {
   entrys[item] = components[item]
 })
 
-// 修改
-const webpackConfig = merge(baseWebpackConfig, {
+module.exports = {
   entry: entrys,
   output: {
-    path: config.build.assetsRoot,
+    path: path.resolve(process.cwd(), './lib'),
+    publicPath: '/dist/',
     filename: '[name].js',
-    library: 'ui-cc',
-    libraryTarget: 'umd'
+    chunkFilename: '[id].js',
+    libraryTarget: 'commonjs2'
+  },
+  resolve: {
+    extensions: ['.js', '.vue', '.json'],
+    alias: {
+      'vue$': 'vue/dist/vue.esm.js',
+      '@': resolve('examples')
+    },
+    modules: ['node_modules']
+  },
+  externals: {
+    vue: {
+      root: 'Vue',
+      commonjs: 'vue',
+      commonjs2: 'vue',
+      amd: 'vue'
+    }
+  },
+  module: {
+    rules: [
+      {
+        test: /\.(jsx?|babel|es6)$/,
+        include: process.cwd(),
+        exclude: /node_modules|utils\/popper\.js|utils\/date.\js/,
+        loader: 'babel-loader'
+      },
+      {
+        test: /\.vue$/,
+        loader: 'vue-loader',
+        options: {
+          preserveWhitespace: false
+        }
+      },
+      {
+        test: /\.css$/,
+        loaders: ['style-loader', 'css-loader', 'postcss-loader']
+      },
+      {
+        test: /\.scss$/,
+        loaders: ['style-loader', 'css-loader', 'sass-loader']
+      },
+      {
+        test: /\.html$/,
+        loader: 'html-loader?minimize=false'
+      },
+      {
+        test: /\.otf|ttf|woff2?|eot(\?\S*)?$/,
+        loader: 'url-loader',
+        query: {
+          limit: 10000,
+          name: path.posix.join('static', '[name].[hash:7].[ext]')
+        }
+      },
+      {
+        test: /\.svg(\?\S*)?$/,
+        loader: 'url-loader',
+        query: {
+          limit: 10000,
+          name: path.posix.join('static', '[name].[hash:7].[ext]')
+        }
+      },
+      {
+        test: /\.(gif|png|jpe?g)(\?\S*)?$/,
+        loader: 'url-loader',
+        query: {
+          limit: 10000,
+          name: path.posix.join('static', '[name].[hash:7].[ext]')
+        }
+      }
+    ]
   },
   plugins: [
-    // extract css into its own file
-    new ExtractTextPlugin({
-      // filename: utils.assetsPath('css/[name].[contenthash].css'),
-      filename: '/theme-chalk/[name].css'
+    new webpack.DefinePlugin({
+      'process.env.NODE_ENV': JSON.stringify('production')
     }),
-    ......
+    new webpack.LoaderOptionsPlugin({
+      minimize: true
+    })
   ]
-})
+}
 ```
 
-## <a id="3-测试"></a>3-测试
-
-在node_modules文件夹内新建ui-cc文件夹，将打包的文件放入ui-cc中
-examples/entry/test/test.js
+## <a id="3-编写组件"></a>3-编写组件
+在packages目录下编写每个组件模块，编写组件有一定的结构编写。通过Vue.component注册到Vue上,构成一个install函数,暴露install,当你的别的项目要用时只要安装一下包,用Vue.use()使用。例：
+```
+packages
+  |—— button
+  |     |—— src
+  |     |    └── button.vue  // 组件编写
+  |     └── index.js  // 暴露button组件
+  └── index.js // 引入所有组件模块，暴露所有组件
+```
+button/index.js
 ```javascript
-import UICC from 'ui-cc'
-Vue.use(UICC)
+import ElButton from './src/button';
+
+/* istanbul ignore next */
+ElButton.install = function(Vue) {
+  Vue.component(ElButton.name, ElButton);
+};
+
+export default ElButton;
+```
+packages/index.js
+```javascript
+import Button from '../packages/button/index.js';
+import ButtonGroup from '../packages/button-group/index.js';
+import Tag from '../packages/tag/index.js';
+import Row from '../packages/row/index.js';
+import Col from '../packages/col/index.js';
+import Progress from '../packages/progress/index.js';
+import Card from '../packages/card/index.js';
+
+const components = [
+  Button,
+  ButtonGroup,
+  Tag,
+  Row,
+  Col,
+  Progress,
+  Card
+];
+
+const install = function(Vue, opts = {}) {
+  components.map(component => Vue.component(component.name, component));
+};
+
+/* istanbul ignore if */
+if (typeof window !== 'undefined' && window.Vue) {
+  install(window.Vue);
+}
+
+export default {
+  version: '1.0.0',
+  install,
+  Button,
+  ButtonGroup,  
+  Tag,  
+  Row,
+  Col,
+  Progress,
+  Card
+};
+```
+根目录components.json,用于配置各个组件入口
+```javascript
+{
+  "button": "./packages/button/index.js",
+  "button-group": "./packages/button-group/index.js",
+  "card": "./packages/card/index.js",
+  "tag": "./packages/tag/index.js",
+  "row": "./packages/row/index.js",
+  "col": "./packages/col/index.js",
+  "progress": "./packages/progress/index.js"
+}
 ```
 
-## <a id="4-打包css和fonts"></a>4-打包css和fonts
 
-主题css与fonts的打包使用了gulp，
-官网：[https://www.gulpjs.com.cn/](https://www.gulpjs.com.cn/)
-参考elementUI
-首先下载相关依赖
+## <a id="4-打包组件，package.json修改"></a>4-打包组件，package.json修改
+打包组件会生成lib文件夹，lib目录下index.js为所有组件入口，其他js文件为各个组件的单独入口，用于按需加载使用。
+- package.json的files属性，若设置为["lib"],执行npm pack打出测试包.tgz文件时，tgz文件包含lib，readme.md与package.json
+- package.json的scripts属性， 设置命令,build:lib中`webpack --config build/webpack.componentAll.conf.js`命令是打包所有组件的入口文件，lib目录下生成index.js,`webpack --config build/webpack.component.conf.js`命令是打包各个组件的入口文件，lib目录下生成每个组件对应的js文件。若使用webpack命令打包时报错"Cannot read property 'vue' of undefined",可能是电脑webpack版本过高。
+```
+npm run dev // 运行测试项目
+
+# 打包插件，生成lib文件夹
+npm run build:theme  // 打包字体文件与样式,后面说明
+npm run build:lib    // 打包所有组件生成index.js，与对应的单个组件
+
+# 打包测试项目静态资源文件，生成dist文件夹
+npm run build
+```
+package.json
+```javascript
+{
+  "name": "ui-cc",    // UI框架名字
+  "version": "1.0.0", // 版本
+  "main": "lib/index.js", // 入口文件
+  "style": "lib/theme-chalk/index.css",
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
+    "start": "npm run dev",
+    "build:theme": "gulp build --gulpfile packages/theme-chalk/gulpfile.js && cp-cli packages/theme-chalk/lib lib/theme-chalk",
+    "build:lib": "webpack --config build/webpack.componentAll.conf.js && webpack --config build/webpack.component.conf.js",
+    "build": "node build/build.js"
+  }
+}
+```
+
+## <a id="5-打包css和fonts"></a>5-打包css和fonts
+
+主题css与fonts的打包使用了gulp<br>
+官网：[https://www.gulpjs.com.cn/](https://www.gulpjs.com.cn/)<br>
+主题等打包参考elementUI源码，首先下载相关依赖
 ```javascript
 npm install gulp gulp-autoprefixer gulp-cssmin gulp-postcss gulp-sass --save-dev
 npm install cp-cli --save-dev
 ```
-仿造elementUI将样式文件theme-chalk文件夹放于packages
-
-package.json 添加theme主题打包命令，打包后lib文件夹会有theme-chalk文件出现，内有对应的样式字体文件；
-`npm run build:theme`单独打包样式字体文件，`npm run build`打包样式字体以及js文件
+将样式文件theme-chalk文件夹放于packages目录下
+```
+packages
+  |—— src  // 字体样式文件
+  |—— gulpfile.js  // 配置文件
+  |—— package.json
+  ......
+```
+`package.json`添加theme主题打包命令，打包后lib文件夹会有theme-chalk文件出现，内有对应的样式字体文件；`gulp build --gulpfile packages/theme-chalk/gulpfile.js`命令将css与字体文件打包到packages/theme-chalk下的lib文件夹；`cp-cli packages/theme-chalk/lib lib/theme-chalk`命令将packages/theme-chalk/lib目录下的文件复制到根目录lib/theme-chalk目录下
 ```javascript
 "scripts": {
-  "build:theme": "gulp build --gulpfile packages/theme-chalk/gulpfile.js && cp-cli packages/theme-chalk/lib lib/theme-chalk",
-  "build": "npm run build:theme && node build/build.js"
+  "build:theme": "gulp build --gulpfile packages/theme-chalk/gulpfile.js && cp-cli packages/theme-chalk/lib lib/theme-chalk"
 },
 ```
 
-测试: examples/entry/test/test.js
+## <a id="6-测试"></a>4-测试
+
+1、在新建的项目，或者此项目node_modules文件夹内新建ui-cc文件夹，将打包的lib文件夹和package.json放入ui-cc目录下；<br>
+2、或者执行`npm pack`生成ui-cc-1.0.0.tgz文件，然后`npm install ./ui-cc-1.0.0.tgz`下载ui-cc依赖；
+examples/entry/test/test.js
 ```javascript
 import UICC from 'ui-cc'
 Vue.use(UICC)
 import 'ui-cc/theme-chalk/index.css'
 ```
 
-## <a id="5-按需加载"></a>5-按需加载
+## <a id="7-按需加载"></a>7-按需加载
 
 运用`babel-plugin-component`实现按需加载，在执行按需加载时已经配置了对应样式的加载，所以如果在.babelrc文件配置过styleLibraryName属性的，不需要在全局引入ui-cc的css样式了,以下加载的是配置引入ui-cc的lib/theme-chalk文件夹中的对应样式，`component`是插件的名字。
 
@@ -165,9 +457,9 @@ Vue.use(Button)
 Vue.component(Tag.name, Tag)
 ```
 
-## <a id="6-UI框架Markdown格式组件说明文档"></a>6-UI框架Markdown格式组件说明文档
+## <a id="8-UI框架Markdown格式组件说明文档"></a>8-UI框架Markdown格式组件说明文档
 
-### <a id="61-下载依赖"></a>6.1 下载依赖
+### <a id="81-下载依赖"></a>8.1 下载依赖
 使用vue-markdown-loader
 ```javascript
 markdown-it 渲染 markdown 基本语法
@@ -181,7 +473,7 @@ highlight.js 代码块高亮实现
 npm install markdown-it markdown-it-anchor markdown-it-container vue-markdown-loader transliteration cheerio highlight.js --save-dev
 ```
 
-### <a id="62-配置"></a>6.2 配置
+### <a id="82-配置"></a>8.2 配置
 在build目录下建立strip-tags.js文件
 ```javascript
 /*!
@@ -228,7 +520,7 @@ exports.fetch = function(str, tag) {
   return $(tag).html();
 };
 ```
-webpack.examples.conf.js
+builad/webpack.base.conf.js
 ```javascript
 const md = require('markdown-it')();  // 引入markdown-it
 const slugify = require('transliteration').slugify; // 引入transliteration中的slugify方法
@@ -325,25 +617,24 @@ module.exports = {
 }
 ```
 
-### <a id="63-md格式组件使用"></a>6.3 md格式组件使用
+### <a id="83-md格式组件使用"></a>8.3 md格式组件使用
 
-- 举例单个使用：
+- 举例单个使用：button.md
 ```
-1.  button.md
-2.  ### 基础用法
-3.  基础的按钮用法。
-4.  :::demo 使用`type`、`plain`、`round`和`circle`属性来定义 Button 的样式。
-5.  ```html
-6.  <el-row>
-7.    <el-button>默认按钮</el-button>
-8.    <el-button type="primary">主要按钮</el-button>
-9.    <el-button type="success">成功按钮</el-button>
-10.   <el-button type="info">信息按钮</el-button>
-11.   <el-button type="warning">警告按钮</el-button>
-12.   <el-button type="danger">危险按钮</el-button>
-13. </el-row>
-14. ```
-15. :::
+1.  ### 基础用法
+2.  基础的按钮用法。
+3.  :::demo 使用`type`、`plain`、`round`和`circle`属性来定义 Button 的样式。
+4.  ```html
+5.  <el-row>
+6.    <el-button>默认按钮</el-button>
+7.    <el-button type="primary">主要按钮</el-button>
+8.    <el-button type="success">成功按钮</el-button>
+9.    <el-button type="info">信息按钮</el-button>
+10.   <el-button type="warning">警告按钮</el-button>
+11.   <el-button type="danger">危险按钮</el-button>
+12. </el-row>
+13. ```
+14. :::
 ```
 
 ```html
@@ -364,6 +655,7 @@ export default {
 </script>
 ```
 - 项目使用
+
 1、构建全局组件demo-block.vue模板组件： index/components/demo-block.vue
 ```html
 <div class="docs-demo-wrapper">
@@ -469,7 +761,17 @@ export default new Router({
   routes: routes
 })
 ```
-index/index.js
+将nav.config.json遍历的routes内容类似于以下：
+```javascript
+[
+  {
+    path: '/hello',
+    name: 'hello',
+    component: r => require.ensure([], () => r(require('../docs/hello.md')))          
+  }
+]
+```
+examples/entry/index/index.js
 ```javascript
 import router from './router'
 new Vue({
@@ -515,6 +817,68 @@ cnpm install node-sass sass-loader --save-dev
 运行： npm run dev
 
 ![](readmeimg/1.png)
+
+
+## <a id="9-项目目录">9-项目目录
+
+```
+├── Readme.md                       帮助文档
+├── build                           项目构建(webpack)相关代码
+│   ├── build.js                    生产环境构建代码
+│   ├── check-versions.js           检查node&npm等版本
+│   ├── dev-client.js               热加载相关
+│   ├── dev-server.js               构建本地服务器
+│   ├── strip-tags.js               md格式组件配置使用，在webpack.base.conf.js使用
+│   ├── utils.js                    构建配置公用工具
+│   ├── vue-loader.conf.js          vue加载器
+│   ├── webpack.base.conf.js        webpack基础环境配置
+│   ├── webpack.dev.conf.js         webpack开发环境配置
+│   ├── webpack.prod.conf.js        webpack生产环境配置
+│   ├── webpack.component.conf.js   各个组件分别打包配置，入口由components.json遍历
+│   └── webpack.componentAll.conf.js所有组件打包配置，配置入口packages/index.js
+├── config                          项目开发环境配置相关代码 
+│   ├── dev.env.js                  开发环境变量
+│   ├── index.js                    项目一些配置变量
+│   └── prod.env.js                 生产环境变量
+├── dist                            md格式组件测试项目打包后静态文件
+├── lib                             UI框架打包组件生成的文件
+├── examples                        测试项目源码目录
+│   ├── assets                      系统静态源文件
+│   ├── components                  多系统公用的组件
+│   └── entry                       多页应用入口
+│       ├── index                   主页
+│       │     │── assets              静态文件（样式文件等）
+│       │     │── components          组件
+│       │     │      |── demo-block     md格式组件模板
+│       │     │      |── footer         底部
+│       │     │      |── header         头部
+│       │     │      |── side-nav       侧边菜单导航 
+│       │     │── docs                md文件
+│       │     │── router              路由文件
+│       │     │── index.html          html文件
+│       │     │── index.js            程序入口文件（入口js文件）
+│       │     │── index.vue           页面入口文件（根组件）
+│       │     └── nav.config.json     侧边导航的内容配置json
+│       └── test                    测试页
+├── packages                        组件模块
+│   ├── button                      按钮组件模块
+│   ├── card                        卡片组件模块
+│   └── index.js                    所有组件暴露
+├── static                          静态文件，比如一些图片，json数据等
+├── .babelrc                        ES6语法编译配置
+├── .editorconfig                   定义代码格式
+├── .gitignore                      git上传需要忽略的文件格式
+├── .postcssrc.js                   css3样式补充
+├── components.json                 各组件入口总结，用于使用打包各个组件
+└── package.json                    项目基本信息
+```
+
+
+
+
+
+
+
 
 
 

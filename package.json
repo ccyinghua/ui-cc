@@ -4,11 +4,17 @@
   "description": "view for ui-cc",
   "author": "ccyinghua",
   "private": true,
+  "main": "lib/index.js",
+  "style": "lib/theme-chalk/index.css",
+  "files": [
+    "lib"
+  ],
   "scripts": {
     "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
     "start": "npm run dev",
     "build:theme": "gulp build --gulpfile packages/theme-chalk/gulpfile.js && cp-cli packages/theme-chalk/lib lib/theme-chalk",
-    "build": "npm run build:theme && node build/build.js"
+    "build:lib": "webpack --config build/webpack.componentAll.conf.js && webpack --config build/webpack.component.conf.js",
+    "build": "node build/build.js"
   },
   "repository": {
     "type": "git",
