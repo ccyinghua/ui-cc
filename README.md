@@ -417,7 +417,7 @@ packages
 },
 ```
 
-## <a id="6-测试"></a>4-测试
+## <a id="6-测试"></a>6-测试
 
 1、在新建的项目，或者此项目node_modules文件夹内新建ui-cc文件夹，将打包的lib文件夹和package.json放入ui-cc目录下；<br>
 2、或者执行`npm pack`生成ui-cc-1.0.0.tgz文件，然后`npm install ./ui-cc-1.0.0.tgz`下载ui-cc依赖；
@@ -426,6 +426,13 @@ examples/entry/test/test.js
 import UICC from 'ui-cc'
 Vue.use(UICC)
 import 'ui-cc/theme-chalk/index.css'
+```
+3、若是在本项目直接引入，不想下载依赖使用.tgz文件,
+examples/entry/test/test.js也可以使用以下使用方法
+```javascript
+import UICC from 'packages/index.js'
+import 'packages/theme-chalk/src/index.scss'
+Vue.use(UICC)
 ```
 
 ## <a id="7-按需加载"></a>7-按需加载
@@ -819,8 +826,11 @@ cnpm install node-sass sass-loader --save-dev
 
 ![](readmeimg/1.png)
 
+- 项目打包
 
-
+  - 执行命令`npm run build`对测试项目进行打包，生成`dist`文件夹。
+  - 验证打包的文件是否有效，安装nginx，将打包的文件放置于nginx安装目录下的html目录下，双击nginx.exe启动服务，运行`http://localhost/dist/index.html`或者`http://localhost/dist/test.html`
+  - 打包后的文件运行若报错404找不到css样式文件，则修改config/index.js，修改build下的assetsPublicPath属性：`assetsPublicPath: './'`，然后重新打包运行即可。
 
 ## <a id="9-npm发布">9-npm发布
 

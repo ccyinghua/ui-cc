@@ -26,7 +26,7 @@ module.exports = {
     index: path.resolve(__dirname, '../dist/index.html'),  // 相对路径的拼接
     assetsRoot: path.resolve(__dirname, '../dist'),  // 静态资源的根目录 也就是dist目录
     assetsSubDirectory: 'static',  // 静态资源根目录的子目录static，也就是dist目录下面的static
-    assetsPublicPath: '/',   // 静态资源的公开路径，也就是真正的引用路径
+    assetsPublicPath: './',   // 静态资源的公开路径，也就是真正的引用路径
     productionSourceMap: true,   // 改成false运行时不会出现map调试文件。;是否生成生产环境的sourcmap，sourcmap是用来debug编译后文件的，通过映射到编译前文件来实现
     // Gzip off by default as many popular static hosts such as
     // Surge or Netlify already gzip all static assets for you.
